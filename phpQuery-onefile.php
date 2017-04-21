@@ -129,7 +129,6 @@ class DOMEvent {
     }
 }
 
-
 /**
  * DOMDocumentWrapper class simplifies work with DOMDocument.
  *
@@ -1028,7 +1027,6 @@ abstract class phpQueryEvents {
     }
 }
 
-
 interface ICallbackNamed {
     function hasName();
 
@@ -1837,27 +1835,31 @@ class phpQueryObject
     protected function matchClasses($class, $node) {
         // multi-class
         if (mb_strpos($class, '.', 1)) {
-            $classes = explode('.', substr($class, 1));
+            $classes = explode('.', mb_strtolower(substr($class, 1)));
             $classesCount = count($classes);
-            $nodeClasses = explode(' ', $node->getAttribute('class'));
+
+            $nodeClasses = explode(' ', mb_strtolower($node->getAttribute('class')));
             $nodeClassesCount = count($nodeClasses);
+
             if ($classesCount > $nodeClassesCount)
                 return false;
+
             $diff = count(
                 array_diff(
                     $classes,
                     $nodeClasses
                 )
             );
+
             if (!$diff)
                 return true;
             // single-class
         } else {
             return in_array(
             // strip leading dot from class name
-                substr($class, 1),
+                mb_strtolower(substr($class, 1)),
                 // get classes for element as array
-                explode(' ', $node->getAttribute('class'))
+                explode(' ', mb_strtolower($node->getAttribute('class')))
             );
         }
     }
@@ -2009,7 +2011,9 @@ class phpQueryObject
                             $execute = true;
                             $XQuery .= "[@{$attr}]";
                         } else {
-                            $XQuery .= "[@{$attr}='{$value}']";
+                            //case-insensitive search
+                            $value = mb_strtolower($value);
+                            $XQuery .= "[translate(@{$attr},'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz')='{$value}']";
                         }
                         // attr without specified value
                     } else {
@@ -2507,9 +2511,10 @@ class phpQueryObject
                                     }
                                     // cut last character
                                     $attr = substr($attr, 0, -1);
-                                    $isMatch = extension_loaded('mbstring') && phpQuery::$mbstringSupport
-                                        ? mb_ereg_match($pattern, $node->getAttribute($attr))
-                                        : preg_match("@{$pattern}@", $node->getAttribute($attr));
+
+                                    //case-insensitive search
+                                    $isMatch = mb_eregi($pattern, $node->getAttribute($attr));
+
                                     if (!$isMatch)
                                         $break = true;
                                 } elseif ($node->getAttribute($attr) != $val)
